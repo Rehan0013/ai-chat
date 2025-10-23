@@ -8,7 +8,10 @@ const { Server } = require("socket.io");
 
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
-  /* options */
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"],
+  },
 });
 
 io.on("connection", (socket) => {
@@ -18,10 +21,28 @@ io.on("connection", (socket) => {
     console.log("user disconnected");
   });
 
-  socket.on("ai-message", async (data) => {
-    const response = await generateResponse(data.prompt);
+  const chatHostory = [];
 
-    console.log(response);
+  socket.on("ai-message", async (data) => {
+    chatHostory.push({
+      role: "user",
+      parts: [
+        {
+          text: data,
+        },
+      ],
+    });
+
+    const response = await generateResponse(chatHostory);
+
+    chatHostory.push({
+      role: "model",
+      parts: [
+        {
+          text: response,
+        },
+      ],
+    });
 
     socket.emit("ai-message-response", { response });
   });
